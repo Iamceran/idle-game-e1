@@ -10,6 +10,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading;
+using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 
@@ -24,11 +26,29 @@ namespace Idle_game
     public sealed partial class MainWindow : Window
     {
         float number;
+        private static System.Timers.Timer aTimer;
+
         public MainWindow()
         {
             InitializeComponent();
             ExtendsContentIntoTitleBar = true;
             SetTitleBar(MyTitleBar);
+            SetTimer();
+        }
+
+        private void SetTimer()
+        {
+            aTimer = new System.Timers.Timer(100);
+            aTimer.Elapsed += (sender, e) =>
+            {
+                number += 0.1f;
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    CounterDisplay.Text = number.ToString("F1");
+                });
+            };
+            aTimer.AutoReset = true;
+            aTimer.Enabled = true;
         }
 
         private void MyButton_Click(object sender, RoutedEventArgs e)
