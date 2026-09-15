@@ -23,9 +23,18 @@ namespace Idle_game
     /// </summary>
     public sealed partial class MainWindow : Window
     {
+        float number;
         public MainWindow()
         {
             InitializeComponent();
+            ExtendsContentIntoTitleBar = true;
+            SetTitleBar(MyTitleBar);
+        }
+
+        private void MyButton_Click(object sender, RoutedEventArgs e)
+        {
+            number++;
+            CounterDisplay.Text = number.ToString();
         }
     }
 }
