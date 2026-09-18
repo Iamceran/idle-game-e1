@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,6 +28,7 @@ namespace Idle_game
     {
         private float number;
         private float autoIncreaser = 0.1f;
+        private int upgradeCost = 10;
         private static System.Timers.Timer timer;
 
         public MainWindow()
@@ -65,7 +67,14 @@ namespace Idle_game
 
         private void UpgradeButton_Click(object sender, RoutedEventArgs e)
         {
-            autoIncreaser += 0.1f;
+            if (number >= upgradeCost)
+            {
+                number -= upgradeCost;
+                upgradeCost += 10;
+                CounterDisplay.Text = number.ToString("F0");
+                autoIncreaser += 0.1f;
+                UpgradeCostDisplay.Text = $"Upgrade Cost: {upgradeCost}";
+            }
         }
     }
 }
