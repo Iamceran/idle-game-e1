@@ -25,8 +25,9 @@ namespace Idle_game
     /// </summary>
     public sealed partial class MainWindow : Window
     {
-        float number;
-        private static System.Timers.Timer aTimer;
+        private float number;
+        private float autoIncreaser = 0.1f;
+        private static System.Timers.Timer timer;
 
         public MainWindow()
         {
@@ -38,23 +39,33 @@ namespace Idle_game
 
         private void SetTimer()
         {
-            aTimer = new System.Timers.Timer(100);
-            aTimer.Elapsed += (sender, e) =>
+            timer = new System.Timers.Timer(100);
+            timer.Elapsed += (sender, e) =>
             {
-                number += 0.1f;
-                DispatcherQueue.TryEnqueue(() =>
-                {
-                    CounterDisplay.Text = number.ToString("F1");
-                });
+                Timer();
             };
-            aTimer.AutoReset = true;
-            aTimer.Enabled = true;
+            timer.AutoReset = true;
+            timer.Enabled = true;
+        }
+
+        private void Timer()
+        {
+            number += autoIncreaser;
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                CounterDisplay.Text = number.ToString("F0");
+            });
         }
 
         private void MyButton_Click(object sender, RoutedEventArgs e)
         {
             number++;
-            CounterDisplay.Text = number.ToString();
+            CounterDisplay.Text = number.ToString("F0");
+        }
+
+        private void UpgradeButton_Click(object sender, RoutedEventArgs e)
+        {
+            autoIncreaser += 0.1f;
         }
     }
 }

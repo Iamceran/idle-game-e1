@@ -36,5 +36,13 @@
             Grid.Row="1" 
             HorizontalAlignment="Center" 
             VerticalAlignment="Center"/>
+        
+        <Button
+            x:Name="UpgradeButton"
+            Content="Upgrade"
+            Click="UpgradeButton_Click"
+            Grid.Row="2"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Center"/>
     </Grid>
 </Window>
