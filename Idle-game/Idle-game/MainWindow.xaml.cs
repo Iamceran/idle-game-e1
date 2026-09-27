@@ -44,13 +44,13 @@ namespace Idle_game
             timer = new System.Timers.Timer(100);
             timer.Elapsed += (sender, e) =>
             {
-                Timer();
+                AutoNumberIncreaser();
             };
             timer.AutoReset = true;
             timer.Enabled = true;
         }
 
-        private void Timer()
+        private void AutoNumberIncreaser()
         {
             number += autoIncreaser;
             DispatcherQueue.TryEnqueue(() =>
