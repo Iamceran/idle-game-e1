@@ -1,4 +1,5 @@
 using Idle_game.Models;
+using Idle_game.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -16,7 +17,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
-using Idle_game.Services;
 
 namespace Idle_game
 {
@@ -26,9 +26,11 @@ namespace Idle_game
         private double accumulatedAutomatedEarnings = 0;
         private readonly double baseIncomePerSecond = 0.1;
 
+        // [Requirement 1 & 4] Independent DispatcherTimers for game loop and logging
         private readonly DispatcherTimer gameLoopTimer = new();
         private readonly DispatcherTimer automationLogTimer = new();
 
+        // [Requirement 3 & 5] Upgrade definition with ID, Base Cost, and Multiplier
         private readonly Upgrade autoClicker = new()
         {
             ID = "autoclicker",
@@ -46,39 +48,44 @@ namespace Idle_game
 
             SetupTimers();
             UpdateUI();
+
+            // [Requirement 7] Automatically try loading saved progress on startup
+            TryAutoLoad();
         }
 
         private void SetupTimers()
         {
-            // Game Loop: runs 10 times per second (every 100ms) to update currency & HUD
+            // [Requirement 1] Core Game Loop: runs 10 times per second (100ms interval)
             gameLoopTimer.Interval = TimeSpan.FromMilliseconds(100);
             gameLoopTimer.Tick += (sender, e) => ProcessGameTick();
             gameLoopTimer.Start();
 
-            // Automation Timer: logs automated income every 10 seconds
+            // [Requirement 4] Independent Automation Logging Timer: triggers every 10 seconds
             automationLogTimer.Interval = TimeSpan.FromSeconds(10);
             automationLogTimer.Tick += (sender, e) => LogAutomatedIncome();
             automationLogTimer.Start();
         }
 
+        // [Requirement 1] Incremental tick processing (10Hz)
         private void ProcessGameTick()
         {
-            // 1. Calculate base income for 0.1s
+            // Calculate base income for 0.1s
             double baseTickIncome = baseIncomePerSecond * 0.1;
 
-            // 2. Calculate actual automated income for 0.1s
+            // Calculate actual automated income for 0.1s
             double autoTickIncome = (autoClicker.AmountOwned * autoClicker.IncomePerSecond) * 0.1;
 
-            // 3. Add both to total currency
+            // Add both to total currency
             currency += baseTickIncome + autoTickIncome;
 
-            // 4. Track actual automated earnings for the log
+            // Track automated earnings for periodic logging
             accumulatedAutomatedEarnings += autoTickIncome;
 
-            // 5. Refresh the UI
+            // Refresh HUD display continuously
             UpdateUI();
         }
 
+        // [Requirement 4] Automated income logging
         private void LogAutomatedIncome()
         {
             if (accumulatedAutomatedEarnings > 0)
@@ -90,17 +97,18 @@ namespace Idle_game
             }
         }
 
+        // [Requirement 1 & 3] Updating UI elements and button states
         private void UpdateUI()
         {
-            // Update HUD
+            // [Requirement 1] Update HUD display (Currency & Total Income per second)
             CurrencyDisplay.Text = $"Currency: {Math.Floor(currency)}";
             IncomeDisplay.Text = $"Income: {CalculateTotalIncome():F1} /sec";
 
-            // Update Upgrade Button text
+            // [Requirement 3] Display upgrade info (Name, Owned Count, Current Scaled Cost, Effect)
             AutoClickerTitle.Text = $"{autoClicker.Name} (Owned: {autoClicker.AmountOwned})";
             AutoClickerCost.Text = $"Cost: {Math.Ceiling(autoClicker.CurrentCost)} | +{autoClicker.IncomePerSecond}/sec";
 
-            // Disable button if player doesn't have enough currency (Requirement 3)
+            // [Requirement 3] Disable buy button if player cannot afford the upgrade
             UpgradeAutoClickerButton.IsEnabled = currency >= autoClicker.CurrentCost;
         }
 
@@ -109,14 +117,14 @@ namespace Idle_game
             return baseIncomePerSecond + (autoClicker.AmountOwned * autoClicker.IncomePerSecond);
         }
 
-        // Manual click action
+        // [Requirement 2] Manual action: Button click adds currency
         private void ClickButton_Click(object sender, RoutedEventArgs e)
         {
             currency += 1;
             UpdateUI();
         }
 
-        // Purchasing an upgrade
+        // [Requirement 3 & 5] Purchasing upgrades with exponential cost scaling
         private void BuyAutoClicker_Click(object sender, RoutedEventArgs e)
         {
             double cost = autoClicker.CurrentCost;
@@ -124,6 +132,8 @@ namespace Idle_game
             if (currency >= cost)
             {
                 currency -= cost;
+
+                // [Requirement 5] Incrementing AmountOwned triggers Math.Pow cost multiplier in Upgrade.cs
                 autoClicker.AmountOwned++;
 
                 AddLogEntry($"Purchased: {autoClicker.Name} for {Math.Ceiling(cost)} currency.");
@@ -131,7 +141,7 @@ namespace Idle_game
             }
         }
 
-        // Helper method to add messages to the Action Log
+        // [Requirement 4] Action Log helper method
         private void AddLogEntry(string message)
         {
             LogListView.Items.Insert(0, $"[{DateTime.Now:HH:mm:ss}] {message}");
@@ -142,24 +152,23 @@ namespace Idle_game
             }
         }
 
+        // [Requirement 6] Save button click handler (Serializes state to Local AppData)
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            // 1. Create a snapshot of the current game state
             SaveState state = new()
             {
                 Currency = currency,
                 LastSaved = DateTime.Now,
                 Upgrades = new List<UpgradeSaveData>
-        {
-            new UpgradeSaveData
-            {
-                ID = autoClicker.ID,
-                AmountOwned = autoClicker.AmountOwned
-            }
-        }
+                {
+                    new UpgradeSaveData
+                    {
+                        ID = autoClicker.ID,
+                        AmountOwned = autoClicker.AmountOwned
+                    }
+                }
             };
 
-            // 2. Save state to disk using SaveService
             bool isSuccess = SaveService.Save(state);
 
             if (isSuccess)
@@ -172,10 +181,9 @@ namespace Idle_game
             }
         }
 
-        // Event handler for Load Game button (Requirement 7)
+        // [Requirement 7] Manual Load button click handler
         private void LoadButton_Click(object sender, RoutedEventArgs e)
         {
-            // 1. Attempt to load save data from disk
             SaveState? loadedState = SaveService.Load();
 
             if (loadedState == null)
@@ -184,11 +192,16 @@ namespace Idle_game
                 return;
             }
 
-            // 2. Restore currency
-            currency = loadedState.Currency;
+            ApplySaveState(loadedState);
+            AddLogEntry($"Game loaded! Progress restored from {loadedState.LastSaved:HH:mm:ss}.");
+        }
 
-            // 3. Restore upgrade counts
-            UpgradeSaveData? savedAutoClicker = loadedState.Upgrades
+        // [Requirement 7] Restores loaded save data back into game variables
+        private void ApplySaveState(SaveState state)
+        {
+            currency = state.Currency;
+
+            UpgradeSaveData? savedAutoClicker = state.Upgrades
                 .FirstOrDefault(u => u.ID == autoClicker.ID);
 
             if (savedAutoClicker != null)
@@ -196,9 +209,21 @@ namespace Idle_game
                 autoClicker.AmountOwned = savedAutoClicker.AmountOwned;
             }
 
-            // 4. Refresh HUD to reflect loaded values
             UpdateUI();
-            AddLogEntry($"Game loaded! Progress restored from {loadedState.LastSaved:HH:mm:ss}.");
+        }
+
+        // [Requirement 7] Automatic save data restoration on startup
+        private void TryAutoLoad()
+        {
+            if (SaveService.SaveExists())
+            {
+                SaveState? loadedState = SaveService.Load();
+                if (loadedState != null)
+                {
+                    ApplySaveState(loadedState);
+                    AddLogEntry($"Auto-loaded progress from {loadedState.LastSaved:HH:mm:ss}.");
+                }
+            }
         }
     }
 }
