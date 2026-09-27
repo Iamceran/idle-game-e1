@@ -1,3 +1,4 @@
+using Idle_game.Models;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -16,64 +17,127 @@ using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
-
 namespace Idle_game
 {
-    /// <summary>
-    /// An empty window that can be used on its own or navigated to within a Frame.
-    /// </summary>
     public sealed partial class MainWindow : Window
     {
-        private float number;
-        private float autoIncreaser = 0.1f;
-        private int upgradeCost = 10;
-        private static System.Timers.Timer timer;
+        private double currency = 0;
+        private double accumulatedAutomatedEarnings = 0;
+        private readonly double baseIncomePerSecond = 0.1;
+
+        private readonly DispatcherTimer gameLoopTimer = new();
+        private readonly DispatcherTimer automationLogTimer = new();
+
+        private readonly Upgrade autoClicker = new()
+        {
+            ID = "autoclicker",
+            Name = "Auto-Clicker",
+            BaseCost = 10,
+            CostMultiplier = 1.15,
+            IncomePerSecond = 0.5
+        };
 
         public MainWindow()
         {
             InitializeComponent();
             ExtendsContentIntoTitleBar = true;
             SetTitleBar(MyTitleBar);
-            SetTimer();
+
+            SetupTimers();
+            UpdateUI();
         }
 
-        private void SetTimer()
+        private void SetupTimers()
         {
-            timer = new System.Timers.Timer(100);
-            timer.Elapsed += (sender, e) =>
+            // Game Loop: runs 10 times per second (every 100ms) to update currency & HUD
+            gameLoopTimer.Interval = TimeSpan.FromMilliseconds(100);
+            gameLoopTimer.Tick += (sender, e) => ProcessGameTick();
+            gameLoopTimer.Start();
+
+            // Automation Timer: logs automated income every 10 seconds
+            automationLogTimer.Interval = TimeSpan.FromSeconds(10);
+            automationLogTimer.Tick += (sender, e) => LogAutomatedIncome();
+            automationLogTimer.Start();
+        }
+
+        private void ProcessGameTick()
+        {
+            // 1. Calculate base income for 0.1s
+            double baseTickIncome = baseIncomePerSecond * 0.1;
+
+            // 2. Calculate actual automated income for 0.1s
+            double autoTickIncome = (autoClicker.AmountOwned * autoClicker.IncomePerSecond) * 0.1;
+
+            // 3. Add both to total currency
+            currency += baseTickIncome + autoTickIncome;
+
+            // 4. Track actual automated earnings for the log
+            accumulatedAutomatedEarnings += autoTickIncome;
+
+            // 5. Refresh the UI
+            UpdateUI();
+        }
+
+        private void LogAutomatedIncome()
+        {
+            if (accumulatedAutomatedEarnings > 0)
             {
-                AutoNumberIncreaser();
-            };
-            timer.AutoReset = true;
-            timer.Enabled = true;
+                AddLogEntry($"[Automation] {autoClicker.Name} generated +{accumulatedAutomatedEarnings:F1} currency.");
+
+                // Reset counter for the next 10-second cycle
+                accumulatedAutomatedEarnings = 0;
+            }
         }
 
-        private void AutoNumberIncreaser()
+        private void UpdateUI()
         {
-            number += autoIncreaser;
-            DispatcherQueue.TryEnqueue(() =>
+            // Update HUD
+            CurrencyDisplay.Text = $"Currency: {Math.Floor(currency)}";
+            IncomeDisplay.Text = $"Income: {CalculateTotalIncome():F1} /sec";
+
+            // Update Upgrade Button text
+            AutoClickerTitle.Text = $"{autoClicker.Name} (Owned: {autoClicker.AmountOwned})";
+            AutoClickerCost.Text = $"Cost: {Math.Ceiling(autoClicker.CurrentCost)} | +{autoClicker.IncomePerSecond}/sec";
+
+            // Disable button if player doesn't have enough currency (Requirement 3)
+            UpgradeAutoClickerButton.IsEnabled = currency >= autoClicker.CurrentCost;
+        }
+
+        private double CalculateTotalIncome()
+        {
+            return baseIncomePerSecond + (autoClicker.AmountOwned * autoClicker.IncomePerSecond);
+        }
+
+        // Manual click action
+        private void ClickButton_Click(object sender, RoutedEventArgs e)
+        {
+            currency += 1;
+            UpdateUI();
+        }
+
+        // Purchasing an upgrade
+        private void BuyAutoClicker_Click(object sender, RoutedEventArgs e)
+        {
+            double cost = autoClicker.CurrentCost;
+
+            if (currency >= cost)
             {
-                CounterDisplay.Text = number.ToString("F0");
-            });
+                currency -= cost;
+                autoClicker.AmountOwned++;
+
+                AddLogEntry($"Purchased: {autoClicker.Name} for {Math.Ceiling(cost)} currency.");
+                UpdateUI();
+            }
         }
 
-        private void MyButton_Click(object sender, RoutedEventArgs e)
+        // Helper method to add messages to the Action Log
+        private void AddLogEntry(string message)
         {
-            number++;
-            CounterDisplay.Text = number.ToString("F0");
-        }
+            LogListView.Items.Insert(0, $"[{DateTime.Now:HH:mm:ss}] {message}");
 
-        private void UpgradeButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (number >= upgradeCost)
+            if (LogListView.Items.Count > 50)
             {
-                number -= upgradeCost;
-                upgradeCost += 10;
-                CounterDisplay.Text = number.ToString("F0");
-                autoIncreaser += 0.1f;
-                UpgradeCostDisplay.Text = $"Upgrade Cost: {upgradeCost}";
+                LogListView.Items.RemoveAt(50);
             }
         }
     }

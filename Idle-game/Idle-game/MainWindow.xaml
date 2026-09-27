@@ -13,44 +13,48 @@
         <MicaBackdrop />
     </Window.SystemBackdrop>
     
-    <Grid>
+    <Grid Margin="20">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <TitleBar 
-            x:Name="MyTitleBar" 
-            Title="Idle-game"/>
-        
-        <TextBlock 
-            x:Name="CounterDisplay" 
-            Text="0"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Center"
-            Grid.Row="0"/>
 
-        <Button 
-            x:Name="MyButton" 
-            Content="Click Me" 
-            Click="MyButton_Click"
-            Grid.Row="1" 
-            HorizontalAlignment="Center" 
-            VerticalAlignment="Center"/>
-        
-        <TextBlock
-            x:Name="UpgradeCostDisplay"
-            Text="Upgrade Cost: 10"
-            Grid.Row="2"
-            Height="60"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Center"/>
+        <TitleBar x:Name="MyTitleBar" Title="Idle-game" Grid.Row="0"/>
 
-        <Button
-            x:Name="UpgradeButton"
-            Content="Upgrade"
-            Click="UpgradeButton_Click"
-            Grid.Row="2"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Center"/>
+        <StackPanel Grid.Row="1" HorizontalAlignment="Center" Margin="0, 15, 0, 25">
+            <TextBlock x:Name="CurrencyDisplay" Text="Currency: 0" FontSize="32" FontWeight="Bold" HorizontalAlignment="Center"/>
+            <TextBlock x:Name="IncomeDisplay" Text="Income: 0.0 /sec" FontSize="16" Foreground="Gray" HorizontalAlignment="Center"/>
+        </StackPanel>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Spacing="15" Margin="0,0,15,0">
+                <Button x:Name="ClickButton" Content="Click for Currency (+1)" 
+                        Click="ClickButton_Click" HorizontalAlignment="Stretch" Height="50" FontSize="16"/>
+
+                <TextBlock Text="Shop &amp; Upgrades" FontSize="18" FontWeight="SemiBold" Margin="0,10,0,0"/>
+
+                <Button x:Name="UpgradeAutoClickerButton" Click="BuyAutoClicker_Click" HorizontalAlignment="Stretch">
+                    <StackPanel HorizontalAlignment="Left">
+                        <TextBlock x:Name="AutoClickerTitle" Text="Auto-Clicker (Owned: 0)" FontWeight="Bold"/>
+                        <TextBlock x:Name="AutoClickerCost" Text="Cost: 10 | +0.5/sec" FontSize="12" Foreground="Gray"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+
+            <Grid Grid.Column="1" Margin="15,0,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Text="Action Log" FontSize="18" FontWeight="SemiBold" Grid.Row="0" Margin="0,0,0,10"/>
+                <ListView x:Name="LogListView" Grid.Row="1" BorderThickness="1" BorderBrush="Gray"/>
+            </Grid>
+        </Grid>
     </Grid>
 </Window>
