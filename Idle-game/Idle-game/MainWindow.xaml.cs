@@ -16,6 +16,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Idle_game.Services;
 
 namespace Idle_game
 {
@@ -82,7 +83,7 @@ namespace Idle_game
         {
             if (accumulatedAutomatedEarnings > 0)
             {
-                AddLogEntry($"[Automation] {autoClicker.Name} generated +{accumulatedAutomatedEarnings:F1} currency.");
+                AddLogEntry($"[Automation] {autoClicker.Name} generated +{accumulatedAutomatedEarnings:F1} currency in 10 seconds.");
 
                 // Reset counter for the next 10-second cycle
                 accumulatedAutomatedEarnings = 0;
@@ -139,6 +140,65 @@ namespace Idle_game
             {
                 LogListView.Items.RemoveAt(50);
             }
+        }
+
+        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            // 1. Create a snapshot of the current game state
+            SaveState state = new()
+            {
+                Currency = currency,
+                LastSaved = DateTime.Now,
+                Upgrades = new List<UpgradeSaveData>
+        {
+            new UpgradeSaveData
+            {
+                ID = autoClicker.ID,
+                AmountOwned = autoClicker.AmountOwned
+            }
+        }
+            };
+
+            // 2. Save state to disk using SaveService
+            bool isSuccess = SaveService.Save(state);
+
+            if (isSuccess)
+            {
+                AddLogEntry("Game saved successfully!");
+            }
+            else
+            {
+                AddLogEntry("Failed to save game.");
+            }
+        }
+
+        // Event handler for Load Game button (Requirement 7)
+        private void LoadButton_Click(object sender, RoutedEventArgs e)
+        {
+            // 1. Attempt to load save data from disk
+            SaveState? loadedState = SaveService.Load();
+
+            if (loadedState == null)
+            {
+                AddLogEntry("No save file found.");
+                return;
+            }
+
+            // 2. Restore currency
+            currency = loadedState.Currency;
+
+            // 3. Restore upgrade counts
+            UpgradeSaveData? savedAutoClicker = loadedState.Upgrades
+                .FirstOrDefault(u => u.ID == autoClicker.ID);
+
+            if (savedAutoClicker != null)
+            {
+                autoClicker.AmountOwned = savedAutoClicker.AmountOwned;
+            }
+
+            // 4. Refresh HUD to reflect loaded values
+            UpdateUI();
+            AddLogEntry($"Game loaded! Progress restored from {loadedState.LastSaved:HH:mm:ss}.");
         }
     }
 }

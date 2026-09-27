@@ -35,7 +35,7 @@
 
             <StackPanel Grid.Column="0" Spacing="15" Margin="0,0,15,0">
                 <Button x:Name="ClickButton" Content="Click for Currency (+1)" 
-                        Click="ClickButton_Click" HorizontalAlignment="Stretch" Height="50" FontSize="16"/>
+            Click="ClickButton_Click" HorizontalAlignment="Stretch" Height="50" FontSize="16"/>
 
                 <TextBlock Text="Shop &amp; Upgrades" FontSize="18" FontWeight="SemiBold" Margin="0,10,0,0"/>
 
@@ -45,6 +45,18 @@
                         <TextBlock x:Name="AutoClickerCost" Text="Cost: 10 | +0.5/sec" FontSize="12" Foreground="Gray"/>
                     </StackPanel>
                 </Button>
+
+                <TextBlock Text="Game Management" FontSize="18" FontWeight="SemiBold" Margin="0,10,0,0"/>
+
+                <Grid ColumnSpacing="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Button x:Name="SaveButton" Content="Save Game" Click="SaveButton_Click" Grid.Column="0" HorizontalAlignment="Stretch"/>
+                    <Button x:Name="LoadButton" Content="Load Game" Click="LoadButton_Click" Grid.Column="1" HorizontalAlignment="Stretch"/>
+                </Grid>
             </StackPanel>
 
             <Grid Grid.Column="1" Margin="15,0,0,0">
