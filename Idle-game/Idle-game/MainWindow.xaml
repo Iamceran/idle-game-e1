@@ -22,11 +22,13 @@
 
         <TitleBar x:Name="MyTitleBar" Title="Pokemon Card Shop Idle Game" Grid.Row="0"/>
 
+        <!-- MAIN GAME HUD -->
         <StackPanel Grid.Row="1" HorizontalAlignment="Center" Margin="0, 15, 0, 25">
             <TextBlock x:Name="CurrencyDisplay" Text="Currency: €0" FontSize="32" FontWeight="Bold" HorizontalAlignment="Center"/>
             <TextBlock x:Name="IncomeDisplay" Text="Income: €0.0 /sec" FontSize="16" Foreground="Gray" HorizontalAlignment="Center"/>
         </StackPanel>
 
+        <!-- MAIN GAME CONTENT -->
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -40,7 +42,7 @@
                 <TextBlock Text="Store Upgrades" FontSize="18" FontWeight="SemiBold" Margin="0,10,0,0"/>
 
                 <!-- Tier 1: Small Store -->
-                <Button x:Name="UpgradeSmallStoreButton" Click="BuyUpgrade_Click" Tag="small_store" HorizontalAlignment="Stretch">
+                <Button x:Name="UpgradeSmallStoreButton" Click="BuyUpgrade_Click" Tag="small_cardshop" HorizontalAlignment="Stretch">
                     <StackPanel HorizontalAlignment="Left">
                         <TextBlock x:Name="SmallStoreTitle" Text="Small Store (Owned: 0)" FontWeight="Bold"/>
                         <TextBlock x:Name="SmallStoreCost" Text="Cost: €10 | +€0.5/sec" FontSize="12" Foreground="Gray"/>
@@ -48,7 +50,7 @@
                 </Button>
 
                 <!-- Tier 2: Medium Store -->
-                <Button x:Name="UpgradeMediumStoreButton" Click="BuyUpgrade_Click" Tag="medium_store" HorizontalAlignment="Stretch">
+                <Button x:Name="UpgradeMediumStoreButton" Click="BuyUpgrade_Click" Tag="medium_cardshop" HorizontalAlignment="Stretch">
                     <StackPanel HorizontalAlignment="Left">
                         <TextBlock x:Name="MediumStoreTitle" Text="Medium Store (Owned: 0)" FontWeight="Bold"/>
                         <TextBlock x:Name="MediumStoreCost" Text="Cost: €100 | +€4.0/sec" FontSize="12" Foreground="Gray"/>
@@ -56,7 +58,7 @@
                 </Button>
 
                 <!-- Tier 3: Global Store -->
-                <Button x:Name="UpgradeGlobalStoreButton" Click="BuyUpgrade_Click" Tag="global_store" HorizontalAlignment="Stretch">
+                <Button x:Name="UpgradeGlobalStoreButton" Click="BuyUpgrade_Click" Tag="global_cardshop" HorizontalAlignment="Stretch">
                     <StackPanel HorizontalAlignment="Left">
                         <TextBlock x:Name="GlobalStoreTitle" Text="Global Store (Owned: 0)" FontWeight="Bold"/>
                         <TextBlock x:Name="GlobalStoreCost" Text="Cost: €1100 | +€32.0/sec" FontSize="12" Foreground="Gray"/>
@@ -84,6 +86,35 @@
                 <TextBlock Text="Action Log" FontSize="18" FontWeight="SemiBold" Grid.Row="0" Margin="0,0,0,10"/>
                 <ListView x:Name="LogListView" Grid.Row="1" BorderThickness="1" BorderBrush="Gray"/>
             </Grid>
+        </Grid>
+
+        <!-- START SCREEN OVERLAY -->
+        <Grid x:Name="StartScreenOverlay" Grid.RowSpan="3" 
+              Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" 
+              Canvas.ZIndex="100">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="20" Width="320">
+                <FontIcon Glyph="&#xE719;" FontSize="64" Foreground="{ThemeResource AccentAAFillColorDefaultBrush}"/>
+
+                <StackPanel Spacing="5" HorizontalAlignment="Center">
+                    <TextBlock Text="Pokemon Card Shop" FontSize="28" FontWeight="Bold" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Idle Store Manager" FontSize="16" Foreground="Gray" HorizontalAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Spacing="10" Margin="0,15,0,0">
+                    <Button x:Name="ContinueButton" Content="Continue Empire" 
+                            Style="{StaticResource AccentButtonStyle}"
+                            Click="ContinueGame_Click" HorizontalAlignment="Stretch" Height="45" FontSize="15"/>
+
+                    <Button x:Name="NewGameButton" Content="Start New Game" 
+                            Click="NewGame_Click" HorizontalAlignment="Stretch" Height="40"/>
+
+                    <Button x:Name="ExitButton" Content="Exit Game" 
+                            Click="ExitButton_Click" HorizontalAlignment="Stretch" Height="40"/>
+                </StackPanel>
+
+                <TextBlock x:Name="StartScreenSaveInfo" Text="Checking save status..." 
+                           FontSize="12" Foreground="Gray" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"/>
+            </StackPanel>
         </Grid>
     </Grid>
 </Window>

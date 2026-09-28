@@ -2,21 +2,9 @@ using Idle_game.Models;
 using Idle_game.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Net;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading;
-using System.Threading.Tasks;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 
 namespace Idle_game
 {
@@ -48,44 +36,89 @@ namespace Idle_game
             SetupTimers();
             UpdateUI();
 
-            // [Requirement 7] Automatically try loading saved progress on startup
-            TryAutoLoad();
+            // Prepare Start Screen options
+            CheckSaveStatusForStartScreen();
         }
 
         private void SetupTimers()
         {
-            // [Requirement 1] Core Game Loop: runs 10 times per second (100ms interval)
+            // Core Game Loop: runs 10 times per second (100ms interval)
             gameLoopTimer.Interval = TimeSpan.FromMilliseconds(100);
             gameLoopTimer.Tick += (sender, e) => ProcessGameTick();
-            gameLoopTimer.Start();
 
-            // [Requirement 4] Independent Automation Logging Timer: triggers every 10 seconds
+            // Independent Automation Logging Timer: triggers every 10 seconds
             automationLogTimer.Interval = TimeSpan.FromSeconds(10);
             automationLogTimer.Tick += (sender, e) => LogAutomatedIncome();
-            automationLogTimer.Start();
 
-            // [Requirement 6] Auto-Save Timer: automatically saves progress every 30 seconds
+            // Auto-Save Timer: automatically saves progress every 30 seconds
             autoSaveTimer.Interval = TimeSpan.FromSeconds(30);
             autoSaveTimer.Tick += (sender, e) => SaveGame(isAutoSave: true);
+        }
+
+        private void StartTimers()
+        {
+            gameLoopTimer.Start();
+            automationLogTimer.Start();
             autoSaveTimer.Start();
+        }
+
+        // Checks save file status to enable/disable Continue button on Start Screen
+        private void CheckSaveStatusForStartScreen()
+        {
+            if (SaveService.SaveExists())
+            {
+                var (loadedState, isCorrupted) = SaveService.Load();
+
+                if (isCorrupted)
+                {
+                    ContinueButton.IsEnabled = false;
+                    StartScreenSaveInfo.Text = "Warning: Corrupted save file detected.";
+                }
+                else if (loadedState != null)
+                {
+                    ContinueButton.IsEnabled = true;
+                    StartScreenSaveInfo.Text = $"Save found: €{Math.Floor(loadedState.Currency)} (Last saved {loadedState.LastSaved:HH:mm:ss})";
+                }
+            }
+            else
+            {
+                ContinueButton.IsEnabled = false;
+                StartScreenSaveInfo.Text = "No previous save found. Click 'Start New Game' to play!";
+            }
+        }
+
+        // Start Screen Handler: Continue existing save
+        private void ContinueGame_Click(object sender, RoutedEventArgs e)
+        {
+            TryAutoLoad();
+            StartScreenOverlay.Visibility = Visibility.Collapsed;
+            StartTimers();
+        }
+
+        // Start Screen Handler: Start a fresh game
+        private void NewGame_Click(object sender, RoutedEventArgs e)
+        {
+            ResetToDefault();
+            StartScreenOverlay.Visibility = Visibility.Collapsed;
+            StartTimers();
+            AddLogEntry("Welcome! Your new store empire has begun.");
+        }
+
+        // Start Screen Handler: Exit Application
+        private void ExitButton_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
         }
 
         // [Requirement 1] Incremental tick processing (10Hz)
         private void ProcessGameTick()
         {
-            // Calculate base income for 0.1s
             double baseTickIncome = baseIncomePerSecond * 0.1;
-
-            // Calculate actual automated income across all store tiers for 0.1s
             double autoTickIncome = upgrades.Sum(u => u.AmountOwned * u.IncomePerSecond) * 0.1;
 
-            // Add both to total currency
             currency += baseTickIncome + autoTickIncome;
-
-            // Track automated earnings for periodic logging
             accumulatedAutomatedEarnings += autoTickIncome;
 
-            // Refresh HUD display continuously
             UpdateUI();
         }
 
@@ -95,8 +128,6 @@ namespace Idle_game
             if (accumulatedAutomatedEarnings > 0)
             {
                 AddLogEntry($"[Sales] Store operations generated +€{accumulatedAutomatedEarnings:F1} in 10 seconds.");
-
-                // Reset counter for the next 10-second cycle
                 accumulatedAutomatedEarnings = 0;
             }
         }
@@ -104,30 +135,35 @@ namespace Idle_game
         // [Requirement 1 & 3] Updating UI elements and button states
         private void UpdateUI()
         {
-            // [Requirement 1] Update HUD display (Currency & Total Income per second)
             CurrencyDisplay.Text = $"Currency: €{Math.Floor(currency)}";
             IncomeDisplay.Text = $"Income: €{CalculateTotalIncome():F1} /sec";
 
-            // [Requirement 3] Update Tier 1: Small Cardshop info and button state
             var smallCardshop = GetUpgrade("small_cardshop");
-            SmallStoreTitle.Text = $"{smallCardshop.Name} (Owned: {smallCardshop.AmountOwned})";
-            SmallStoreCost.Text = $"Cost: €{Math.Ceiling(smallCardshop.CurrentCost)} | +€{smallCardshop.IncomePerSecond}/sec";
-            UpgradeSmallStoreButton.IsEnabled = currency >= smallCardshop.CurrentCost;
+            if (smallCardshop != null)
+            {
+                SmallStoreTitle.Text = $"{smallCardshop.Name} (Owned: {smallCardshop.AmountOwned})";
+                SmallStoreCost.Text = $"Cost: €{Math.Ceiling(smallCardshop.CurrentCost)} | +€{smallCardshop.IncomePerSecond}/sec";
+                UpgradeSmallStoreButton.IsEnabled = currency >= smallCardshop.CurrentCost;
+            }
 
-            // [Requirement 3] Update Tier 2: Medium Cardshop info and button state
             var mediumCardshop = GetUpgrade("medium_cardshop");
-            MediumStoreTitle.Text = $"{mediumCardshop.Name} (Owned: {mediumCardshop.AmountOwned})";
-            MediumStoreCost.Text = $"Cost: €{Math.Ceiling(mediumCardshop.CurrentCost)} | +€{mediumCardshop.IncomePerSecond}/sec";
-            UpgradeMediumStoreButton.IsEnabled = currency >= mediumCardshop.CurrentCost;
+            if (mediumCardshop != null)
+            {
+                MediumStoreTitle.Text = $"{mediumCardshop.Name} (Owned: {mediumCardshop.AmountOwned})";
+                MediumStoreCost.Text = $"Cost: €{Math.Ceiling(mediumCardshop.CurrentCost)} | +€{mediumCardshop.IncomePerSecond}/sec";
+                UpgradeMediumStoreButton.IsEnabled = currency >= mediumCardshop.CurrentCost;
+            }
 
-            // [Requirement 3] Update Tier 3: Global Cardshop info and button state
             var globalCardshop = GetUpgrade("global_cardshop");
-            GlobalStoreTitle.Text = $"{globalCardshop.Name} (Owned: {globalCardshop.AmountOwned})";
-            GlobalStoreCost.Text = $"Cost: €{Math.Ceiling(globalCardshop.CurrentCost)} | +€{globalCardshop.IncomePerSecond}/sec";
-            UpgradeGlobalStoreButton.IsEnabled = currency >= globalCardshop.CurrentCost;
+            if (globalCardshop != null)
+            {
+                GlobalStoreTitle.Text = $"{globalCardshop.Name} (Owned: {globalCardshop.AmountOwned})";
+                GlobalStoreCost.Text = $"Cost: €{Math.Ceiling(globalCardshop.CurrentCost)} | +€{globalCardshop.IncomePerSecond}/sec";
+                UpgradeGlobalStoreButton.IsEnabled = currency >= globalCardshop.CurrentCost;
+            }
         }
 
-        private Upgrade GetUpgrade(string id) => upgrades.First(u => u.ID == id);
+        private Upgrade GetUpgrade(string id) => upgrades.FirstOrDefault(u => u.ID == id);
 
         private double CalculateTotalIncome()
         {
@@ -141,19 +177,19 @@ namespace Idle_game
             UpdateUI();
         }
 
-        // [Requirement 3 & 5] Purchasing upgrades with exponential cost scaling using Button Tag
+        // [Requirement 3 & 5] Purchasing upgrades with exponential cost scaling
         private void BuyUpgrade_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button && button.Tag is string upgradeId)
             {
                 Upgrade upgrade = GetUpgrade(upgradeId);
+                if (upgrade == null) return;
+
                 double cost = upgrade.CurrentCost;
 
                 if (currency >= cost)
                 {
                     currency -= cost;
-
-                    // [Requirement 5] Incrementing AmountOwned triggers Math.Pow cost multiplier in Upgrade.cs
                     upgrade.AmountOwned++;
 
                     AddLogEntry($"Purchased: {upgrade.Name} for €{Math.Ceiling(cost)}.");
@@ -173,7 +209,7 @@ namespace Idle_game
             }
         }
 
-        // [Requirement 6] Centralized Save logic (used by manual Save button and Auto-Save timer)
+        // [Requirement 6] Centralized Save logic
         private void SaveGame(bool isAutoSave = false)
         {
             SaveState state = new()
@@ -200,13 +236,11 @@ namespace Idle_game
             }
         }
 
-        // [Requirement 6] Manual Save button click handler
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             SaveGame(isAutoSave: false);
         }
 
-        // [Requirement 7] Manual Load button click handler
         private void LoadButton_Click(object sender, RoutedEventArgs e)
         {
             var (loadedState, isCorrupted) = SaveService.Load();
@@ -228,7 +262,6 @@ namespace Idle_game
             AddLogEntry($"Store empire loaded! Progress restored from {loadedState.LastSaved:HH:mm:ss}.");
         }
 
-        // [Requirement 7] Restores loaded save data back into game variables
         private void ApplySaveState(SaveState state)
         {
             currency = state.Currency;
@@ -245,7 +278,6 @@ namespace Idle_game
             UpdateUI();
         }
 
-        // [Requirement 7] Automatic save data restoration on startup
         private void TryAutoLoad()
         {
             if (SaveService.SaveExists())
