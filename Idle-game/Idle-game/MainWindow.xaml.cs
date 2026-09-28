@@ -31,14 +31,12 @@ namespace Idle_game
         private readonly DispatcherTimer automationLogTimer = new();
         private readonly DispatcherTimer autoSaveTimer = new();
 
-        // [Requirement 3 & 5] Upgrade definition with ID, Base Cost, and Multiplier
-        private readonly Upgrade autoClicker = new()
+        // [Requirement 3 & 5] Multi-tier Upgrade definitions scaled by store sizes (Pokemon Card Shop Theme)
+        private readonly List<Upgrade> upgrades = new()
         {
-            ID = "autoclicker",
-            Name = "Auto-Clicker",
-            BaseCost = 10,
-            CostMultiplier = 1.15,
-            IncomePerSecond = 0.5
+            new Upgrade { ID = "small_cardshop", Name = "Small Card Shop", BaseCost = 10, CostMultiplier = 1.15, IncomePerSecond = 0.5 },
+            new Upgrade { ID = "medium_cardshop", Name = "Medium Card Shop", BaseCost = 100, CostMultiplier = 1.15, IncomePerSecond = 4.0 },
+            new Upgrade { ID = "global_cardshop", Name = "Global Card Shop", BaseCost = 1100, CostMultiplier = 1.15, IncomePerSecond = 32.0 }
         };
 
         public MainWindow()
@@ -78,8 +76,8 @@ namespace Idle_game
             // Calculate base income for 0.1s
             double baseTickIncome = baseIncomePerSecond * 0.1;
 
-            // Calculate actual automated income for 0.1s
-            double autoTickIncome = (autoClicker.AmountOwned * autoClicker.IncomePerSecond) * 0.1;
+            // Calculate actual automated income across all store tiers for 0.1s
+            double autoTickIncome = upgrades.Sum(u => u.AmountOwned * u.IncomePerSecond) * 0.1;
 
             // Add both to total currency
             currency += baseTickIncome + autoTickIncome;
@@ -96,7 +94,7 @@ namespace Idle_game
         {
             if (accumulatedAutomatedEarnings > 0)
             {
-                AddLogEntry($"[Automation] {autoClicker.Name} generated +{accumulatedAutomatedEarnings:F1} currency in 10 seconds.");
+                AddLogEntry($"[Sales] Store operations generated +€{accumulatedAutomatedEarnings:F1} in 10 seconds.");
 
                 // Reset counter for the next 10-second cycle
                 accumulatedAutomatedEarnings = 0;
@@ -107,20 +105,33 @@ namespace Idle_game
         private void UpdateUI()
         {
             // [Requirement 1] Update HUD display (Currency & Total Income per second)
-            CurrencyDisplay.Text = $"Currency: {Math.Floor(currency)}";
-            IncomeDisplay.Text = $"Income: {CalculateTotalIncome():F1} /sec";
+            CurrencyDisplay.Text = $"Currency: €{Math.Floor(currency)}";
+            IncomeDisplay.Text = $"Income: €{CalculateTotalIncome():F1} /sec";
 
-            // [Requirement 3] Display upgrade info (Name, Owned Count, Current Scaled Cost, Effect)
-            AutoClickerTitle.Text = $"{autoClicker.Name} (Owned: {autoClicker.AmountOwned})";
-            AutoClickerCost.Text = $"Cost: {Math.Ceiling(autoClicker.CurrentCost)} | +{autoClicker.IncomePerSecond}/sec";
+            // [Requirement 3] Update Tier 1: Small Cardshop info and button state
+            var smallCardshop = GetUpgrade("small_cardshop");
+            SmallStoreTitle.Text = $"{smallCardshop.Name} (Owned: {smallCardshop.AmountOwned})";
+            SmallStoreCost.Text = $"Cost: €{Math.Ceiling(smallCardshop.CurrentCost)} | +€{smallCardshop.IncomePerSecond}/sec";
+            UpgradeSmallStoreButton.IsEnabled = currency >= smallCardshop.CurrentCost;
 
-            // [Requirement 3] Disable buy button if player cannot afford the upgrade
-            UpgradeAutoClickerButton.IsEnabled = currency >= autoClicker.CurrentCost;
+            // [Requirement 3] Update Tier 2: Medium Cardshop info and button state
+            var mediumCardshop = GetUpgrade("medium_cardshop");
+            MediumStoreTitle.Text = $"{mediumCardshop.Name} (Owned: {mediumCardshop.AmountOwned})";
+            MediumStoreCost.Text = $"Cost: €{Math.Ceiling(mediumCardshop.CurrentCost)} | +€{mediumCardshop.IncomePerSecond}/sec";
+            UpgradeMediumStoreButton.IsEnabled = currency >= mediumCardshop.CurrentCost;
+
+            // [Requirement 3] Update Tier 3: Global Cardshop info and button state
+            var globalCardshop = GetUpgrade("global_cardshop");
+            GlobalStoreTitle.Text = $"{globalCardshop.Name} (Owned: {globalCardshop.AmountOwned})";
+            GlobalStoreCost.Text = $"Cost: €{Math.Ceiling(globalCardshop.CurrentCost)} | +€{globalCardshop.IncomePerSecond}/sec";
+            UpgradeGlobalStoreButton.IsEnabled = currency >= globalCardshop.CurrentCost;
         }
+
+        private Upgrade GetUpgrade(string id) => upgrades.First(u => u.ID == id);
 
         private double CalculateTotalIncome()
         {
-            return baseIncomePerSecond + (autoClicker.AmountOwned * autoClicker.IncomePerSecond);
+            return baseIncomePerSecond + upgrades.Sum(u => u.AmountOwned * u.IncomePerSecond);
         }
 
         // [Requirement 2] Manual action: Button click adds currency
@@ -130,20 +141,24 @@ namespace Idle_game
             UpdateUI();
         }
 
-        // [Requirement 3 & 5] Purchasing upgrades with exponential cost scaling
-        private void BuyAutoClicker_Click(object sender, RoutedEventArgs e)
+        // [Requirement 3 & 5] Purchasing upgrades with exponential cost scaling using Button Tag
+        private void BuyUpgrade_Click(object sender, RoutedEventArgs e)
         {
-            double cost = autoClicker.CurrentCost;
-
-            if (currency >= cost)
+            if (sender is Button button && button.Tag is string upgradeId)
             {
-                currency -= cost;
+                Upgrade upgrade = GetUpgrade(upgradeId);
+                double cost = upgrade.CurrentCost;
 
-                // [Requirement 5] Incrementing AmountOwned triggers Math.Pow cost multiplier in Upgrade.cs
-                autoClicker.AmountOwned++;
+                if (currency >= cost)
+                {
+                    currency -= cost;
 
-                AddLogEntry($"Purchased: {autoClicker.Name} for {Math.Ceiling(cost)} currency.");
-                UpdateUI();
+                    // [Requirement 5] Incrementing AmountOwned triggers Math.Pow cost multiplier in Upgrade.cs
+                    upgrade.AmountOwned++;
+
+                    AddLogEntry($"Purchased: {upgrade.Name} for €{Math.Ceiling(cost)}.");
+                    UpdateUI();
+                }
             }
         }
 
@@ -165,14 +180,11 @@ namespace Idle_game
             {
                 Currency = currency,
                 LastSaved = DateTime.Now,
-                Upgrades = new List<UpgradeSaveData>
+                Upgrades = upgrades.Select(u => new UpgradeSaveData
                 {
-                    new UpgradeSaveData
-                    {
-                        ID = autoClicker.ID,
-                        AmountOwned = autoClicker.AmountOwned
-                    }
-                }
+                    ID = u.ID,
+                    AmountOwned = u.AmountOwned
+                }).ToList()
             };
 
             bool isSuccess = SaveService.Save(state);
@@ -180,11 +192,11 @@ namespace Idle_game
             if (isSuccess)
             {
                 string prefix = isAutoSave ? "[Auto-Save]" : "[Save]";
-                AddLogEntry($"{prefix} Game saved successfully!");
+                AddLogEntry($"{prefix} Store empire saved successfully!");
             }
             else if (!isAutoSave)
             {
-                AddLogEntry("Failed to save game.");
+                AddLogEntry("Failed to save store empire.");
             }
         }
 
@@ -213,7 +225,7 @@ namespace Idle_game
             }
 
             ApplySaveState(loadedState);
-            AddLogEntry($"Game loaded! Progress restored from {loadedState.LastSaved:HH:mm:ss}.");
+            AddLogEntry($"Store empire loaded! Progress restored from {loadedState.LastSaved:HH:mm:ss}.");
         }
 
         // [Requirement 7] Restores loaded save data back into game variables
@@ -221,12 +233,13 @@ namespace Idle_game
         {
             currency = state.Currency;
 
-            UpgradeSaveData? savedAutoClicker = state.Upgrades
-                .FirstOrDefault(u => u.ID == autoClicker.ID);
-
-            if (savedAutoClicker != null)
+            foreach (var savedData in state.Upgrades)
             {
-                autoClicker.AmountOwned = savedAutoClicker.AmountOwned;
+                var upgrade = upgrades.FirstOrDefault(u => u.ID == savedData.ID);
+                if (upgrade != null)
+                {
+                    upgrade.AmountOwned = savedData.AmountOwned;
+                }
             }
 
             UpdateUI();
@@ -255,7 +268,10 @@ namespace Idle_game
         private void ResetToDefault()
         {
             currency = 0;
-            autoClicker.AmountOwned = 0;
+            foreach (var upgrade in upgrades)
+            {
+                upgrade.AmountOwned = 0;
+            }
             UpdateUI();
         }
     }

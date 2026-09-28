@@ -7,12 +7,12 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Title="Idle-game">
+    Title="Pokemon Card Shop Idle Game">
 
     <Window.SystemBackdrop>
         <MicaBackdrop />
     </Window.SystemBackdrop>
-    
+
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -20,11 +20,11 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <TitleBar x:Name="MyTitleBar" Title="Idle-game" Grid.Row="0"/>
+        <TitleBar x:Name="MyTitleBar" Title="Pokemon Card Shop Idle Game" Grid.Row="0"/>
 
         <StackPanel Grid.Row="1" HorizontalAlignment="Center" Margin="0, 15, 0, 25">
-            <TextBlock x:Name="CurrencyDisplay" Text="Currency: 0" FontSize="32" FontWeight="Bold" HorizontalAlignment="Center"/>
-            <TextBlock x:Name="IncomeDisplay" Text="Income: 0.0 /sec" FontSize="16" Foreground="Gray" HorizontalAlignment="Center"/>
+            <TextBlock x:Name="CurrencyDisplay" Text="Currency: €0" FontSize="32" FontWeight="Bold" HorizontalAlignment="Center"/>
+            <TextBlock x:Name="IncomeDisplay" Text="Income: €0.0 /sec" FontSize="16" Foreground="Gray" HorizontalAlignment="Center"/>
         </StackPanel>
 
         <Grid Grid.Row="2">
@@ -34,15 +34,32 @@
             </Grid.ColumnDefinitions>
 
             <StackPanel Grid.Column="0" Spacing="15" Margin="0,0,15,0">
-                <Button x:Name="ClickButton" Content="Click for Currency (+1)" 
-            Click="ClickButton_Click" HorizontalAlignment="Stretch" Height="50" FontSize="16"/>
+                <Button x:Name="ClickButton" Content="Earn money (+€1)" 
+                        Click="ClickButton_Click" HorizontalAlignment="Stretch" Height="50" FontSize="16"/>
 
-                <TextBlock Text="Shop &amp; Upgrades" FontSize="18" FontWeight="SemiBold" Margin="0,10,0,0"/>
+                <TextBlock Text="Store Upgrades" FontSize="18" FontWeight="SemiBold" Margin="0,10,0,0"/>
 
-                <Button x:Name="UpgradeAutoClickerButton" Click="BuyAutoClicker_Click" HorizontalAlignment="Stretch">
+                <!-- Tier 1: Small Store -->
+                <Button x:Name="UpgradeSmallStoreButton" Click="BuyUpgrade_Click" Tag="small_store" HorizontalAlignment="Stretch">
                     <StackPanel HorizontalAlignment="Left">
-                        <TextBlock x:Name="AutoClickerTitle" Text="Auto-Clicker (Owned: 0)" FontWeight="Bold"/>
-                        <TextBlock x:Name="AutoClickerCost" Text="Cost: 10 | +0.5/sec" FontSize="12" Foreground="Gray"/>
+                        <TextBlock x:Name="SmallStoreTitle" Text="Small Store (Owned: 0)" FontWeight="Bold"/>
+                        <TextBlock x:Name="SmallStoreCost" Text="Cost: €10 | +€0.5/sec" FontSize="12" Foreground="Gray"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Tier 2: Medium Store -->
+                <Button x:Name="UpgradeMediumStoreButton" Click="BuyUpgrade_Click" Tag="medium_store" HorizontalAlignment="Stretch">
+                    <StackPanel HorizontalAlignment="Left">
+                        <TextBlock x:Name="MediumStoreTitle" Text="Medium Store (Owned: 0)" FontWeight="Bold"/>
+                        <TextBlock x:Name="MediumStoreCost" Text="Cost: €100 | +€4.0/sec" FontSize="12" Foreground="Gray"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Tier 3: Global Store -->
+                <Button x:Name="UpgradeGlobalStoreButton" Click="BuyUpgrade_Click" Tag="global_store" HorizontalAlignment="Stretch">
+                    <StackPanel HorizontalAlignment="Left">
+                        <TextBlock x:Name="GlobalStoreTitle" Text="Global Store (Owned: 0)" FontWeight="Bold"/>
+                        <TextBlock x:Name="GlobalStoreCost" Text="Cost: €1100 | +€32.0/sec" FontSize="12" Foreground="Gray"/>
                     </StackPanel>
                 </Button>
 
