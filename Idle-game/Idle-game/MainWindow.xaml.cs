@@ -26,9 +26,10 @@ namespace Idle_game
         private double accumulatedAutomatedEarnings = 0;
         private readonly double baseIncomePerSecond = 0.1;
 
-        // [Requirement 1 & 4] Independent DispatcherTimers for game loop and logging
+        // [Requirement 1, 4 & 6] Independent DispatcherTimers for game loop, logging, and auto-saving
         private readonly DispatcherTimer gameLoopTimer = new();
         private readonly DispatcherTimer automationLogTimer = new();
+        private readonly DispatcherTimer autoSaveTimer = new();
 
         // [Requirement 3 & 5] Upgrade definition with ID, Base Cost, and Multiplier
         private readonly Upgrade autoClicker = new()
@@ -64,6 +65,11 @@ namespace Idle_game
             automationLogTimer.Interval = TimeSpan.FromSeconds(10);
             automationLogTimer.Tick += (sender, e) => LogAutomatedIncome();
             automationLogTimer.Start();
+
+            // [Requirement 6] Auto-Save Timer: automatically saves progress every 30 seconds
+            autoSaveTimer.Interval = TimeSpan.FromSeconds(30);
+            autoSaveTimer.Tick += (sender, e) => SaveGame(isAutoSave: true);
+            autoSaveTimer.Start();
         }
 
         // [Requirement 1] Incremental tick processing (10Hz)
@@ -152,8 +158,8 @@ namespace Idle_game
             }
         }
 
-        // [Requirement 6] Save button click handler (Serializes state to Local AppData)
-        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        // [Requirement 6] Centralized Save logic (used by manual Save button and Auto-Save timer)
+        private void SaveGame(bool isAutoSave = false)
         {
             SaveState state = new()
             {
@@ -173,18 +179,32 @@ namespace Idle_game
 
             if (isSuccess)
             {
-                AddLogEntry("Game saved successfully!");
+                string prefix = isAutoSave ? "[Auto-Save]" : "[Save]";
+                AddLogEntry($"{prefix} Game saved successfully!");
             }
-            else
+            else if (!isAutoSave)
             {
                 AddLogEntry("Failed to save game.");
             }
         }
 
+        // [Requirement 6] Manual Save button click handler
+        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            SaveGame(isAutoSave: false);
+        }
+
         // [Requirement 7] Manual Load button click handler
         private void LoadButton_Click(object sender, RoutedEventArgs e)
         {
-            SaveState? loadedState = SaveService.Load();
+            var (loadedState, isCorrupted) = SaveService.Load();
+
+            if (isCorrupted)
+            {
+                ResetToDefault();
+                AddLogEntry("Error: Save file was corrupted and could not be loaded. Reset to default state.");
+                return;
+            }
 
             if (loadedState == null)
             {
@@ -217,13 +237,26 @@ namespace Idle_game
         {
             if (SaveService.SaveExists())
             {
-                SaveState? loadedState = SaveService.Load();
-                if (loadedState != null)
+                var (loadedState, isCorrupted) = SaveService.Load();
+
+                if (isCorrupted)
+                {
+                    ResetToDefault();
+                    AddLogEntry("Warning: Save file was corrupted! Restored fresh default game.");
+                }
+                else if (loadedState != null)
                 {
                     ApplySaveState(loadedState);
                     AddLogEntry($"Auto-loaded progress from {loadedState.LastSaved:HH:mm:ss}.");
                 }
             }
+        }
+
+        private void ResetToDefault()
+        {
+            currency = 0;
+            autoClicker.AmountOwned = 0;
+            UpdateUI();
         }
     }
 }

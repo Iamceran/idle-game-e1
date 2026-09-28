@@ -44,22 +44,42 @@ namespace Idle_game.Services
         }
 
         // 2. Load state from disk
-        public static SaveState? Load()
+        // Returns a tuple: (SaveState? State, bool IsCorrupted)
+        public static (SaveState? State, bool IsCorrupted) Load()
         {
+            if (!File.Exists(FilePath))
+            {
+                return (null, false); // File simply doesn't exist yet
+            }
+
             try
             {
-                if (!File.Exists(FilePath))
+                string json = File.ReadAllText(FilePath);
+                SaveState? state = JsonSerializer.Deserialize<SaveState>(json);
+
+                if (state == null)
                 {
-                    return null;
+                    throw new JsonException("Deserialized state returned null.");
                 }
 
-                string json = File.ReadAllText(FilePath);
-                return JsonSerializer.Deserialize<SaveState>(json);
+                return (state, false); // Success!
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Load failed: {ex.Message}");
-                return null;
+                System.Diagnostics.Debug.WriteLine($"Load failed due to corruption: {ex.Message}");
+
+                // Quarantine the corrupted file so it isn't overwritten immediately
+                try
+                {
+                    string corruptPath = Path.Combine(FolderPath, $"savegame_corrupted_{DateTime.Now:yyyyMMdd_HHmmss}.json");
+                    if (File.Exists(FilePath))
+                    {
+                        File.Move(FilePath, corruptPath, overwrite: true);
+                    }
+                }
+                catch { /* Ignore quarantine failure if file is locked */ }
+
+                return (null, true); // Corrupted!
             }
         }
 
